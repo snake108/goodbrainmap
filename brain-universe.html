@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>脑图宇宙 - Brain Universe</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0f0f0f; }
+    #container { width: 100%; height: 100%; position: relative; }
+
+    .title {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.6);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 14px;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      z-index: 10;
+      pointer-events: none;
+      text-shadow: 0 0 20px rgba(255,255,255,0.3);
+    }
+
+    .stardust {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 50% 10%, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.35), transparent),
+        radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,0.25), transparent),
+        radial-gradient(1px 1px at 15% 90%, rgba(255,255,255,0.15), transparent),
+        radial-gradient(1px 1px at 85% 15%, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 60% 35%, rgba(255,255,255,0.25), transparent),
+        radial-gradient(1px 1px at 25% 45%, rgba(255,255,255,0.15), transparent);
+    }
+
+    .tips {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.35);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 12px;
+      z-index: 10;
+      pointer-events: none;
+      text-align: center;
+      line-height: 1.8;
+      white-space: nowrap;
+    }
+
+    .status-bar {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #ffd666;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 13px;
+      z-index: 10;
+      pointer-events: none;
+      text-shadow: 0 0 12px rgba(255,214,102,0.5);
+      opacity: 0;
+      transition: opacity 0.3s;
+      white-space: nowrap;
+    }
+    .status-bar.visible { opacity: 1; }
+
+    .empty-hint {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255,255,255,0.15);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 18px;
+      letter-spacing: 4px;
+      z-index: 5;
+      pointer-events: none;
+      transition: opacity 0.6s;
+    }
+    .empty-hint.hidden { opacity: 0; }
+
+    /* 右键菜单 */
+    .context-menu {
+      position: fixed;
+      z-index: 100;
+      background: rgba(30,30,30,0.95);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 4px 0;
+      min-width: 140px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      backdrop-filter: blur(12px);
+      display: none;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    .context-menu .menu-item {
+      padding: 8px 16px;
+      color: rgba(255,255,255,0.8);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .context-menu .menu-item:hover { background: rgba(255,255,255,0.1); }
+    .context-menu .menu-item.danger { color: #ff6b6b; }
+    .context-menu .menu-item.danger:hover { background: rgba(255,80,80,0.15); }
+    .context-menu .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
+
+    /* 自定义弹窗 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: rgba(24,24,28,0.97);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 32px 36px 24px;
+      min-width: 340px;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 80px rgba(100,160,255,0.08);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      animation: modalIn 0.25s ease-out;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-title {
+      color: rgba(255,255,255,0.85);
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 18px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    .modal-input:focus {
+      border-color: rgba(145,213,255,0.6);
+      box-shadow: 0 0 16px rgba(145,213,255,0.15);
+    }
+    .modal-input::placeholder { color: rgba(255,255,255,0.25); }
+    .modal-buttons { display: flex; justify-content: center; gap: 12px; margin-top: 22px; }
+    .modal-btn {
+      padding: 8px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    .modal-btn.primary {
+      background: rgba(145,213,255,0.18);
+      color: #91d5ff;
+      border: 1px solid rgba(145,213,255,0.3);
+    }
+    .modal-btn.primary:hover { background: rgba(145,213,255,0.28); }
+    .modal-btn.cancel {
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .modal-btn.cancel:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+    .modal-btn.danger {
+      background: rgba(255,80,80,0.15);
+      color: #ff6b6b;
+      border: 1px solid rgba(255,80,80,0.3);
+    }
+    .modal-btn.danger:hover { background: rgba(255,80,80,0.25); }
+    .modal-msg { color: rgba(255,255,255,0.7); font-size: 14px; text-align: center; line-height: 1.6; }
+
+    #linkLineSvg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    /* ========== 右侧详情侧边栏 ========== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 340px;
+      height: 100%;
+      background: rgba(18, 18, 22, 0.97);
+      border-left: 1px solid rgba(255,255,255,0.08);
+      box-shadow: -8px 0 40px rgba(0,0,0,0.5);
+      backdrop-filter: blur(16px);
+      z-index: 50;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .sidebar-node-name {
+      color: rgba(255,255,255,0.9);
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+    .sidebar-node-name .star-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #91d5ff;
+      box-shadow: 0 0 10px rgba(145,213,255,0.6);
+      flex-shrink: 0;
+    }
+    .sidebar-close {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      color: rgba(255,255,255,0.45);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+    .sidebar-close:hover {
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.8);
+    }
+
+    .sidebar-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px 24px;
+    }
+    .sidebar-body::-webkit-scrollbar { width: 4px; }
+    .sidebar-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    .sidebar-section {
+      margin-bottom: 24px;
+    }
+    .sidebar-label {
+      color: rgba(255,255,255,0.4);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-input {
+      width: 100%;
+      padding: 9px 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    .sidebar-input:focus {
+      border-color: rgba(145,213,255,0.4);
+      box-shadow: 0 0 12px rgba(145,213,255,0.08);
+    }
+    .sidebar-input::placeholder { color: rgba(255,255,255,0.18); }
+
+    .sidebar-textarea {
+      width: 100%;
+      min-height: 160px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: rgba(255,255,255,0.85);
+      font-size: 14px;
+      line-height: 1.7;
+      outline: none;
+      resize: vertical;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    .sidebar-textarea:focus {
+      border-color: rgba(145,213,255,0.4);
+      box-shadow: 0 0 12px rgba(145,213,255,0.08);
+    }
+    .sidebar-textarea::placeholder { color: rgba(255,255,255,0.18); }
+
+    .sidebar-save-hint {
+      color: rgba(255,255,255,0.2);
+      font-size: 11px;
+      text-align: center;
+      margin-top: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ========== 搜索按钮 ========== */
+    .search-btn {
+      position: fixed;
+      top: 22px;
+      right: 24px;
+      z-index: 60;
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      background: rgba(24,24,28,0.85);
+      backdrop-filter: blur(10px);
+      color: rgba(255,255,255,0.55);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .search-btn:hover {
+      background: rgba(40,40,48,0.95);
+      color: rgba(255,255,255,0.85);
+      border-color: rgba(145,213,255,0.3);
+      box-shadow: 0 0 16px rgba(145,213,255,0.1);
+    }
+    .search-btn.active {
+      color: #91d5ff;
+      border-color: rgba(145,213,255,0.5);
+      box-shadow: 0 0 20px rgba(145,213,255,0.15);
+    }
+
+    /* ========== 搜索面板 ========== */
+    .search-panel {
+      position: fixed;
+      top: 68px;
+      right: 24px;
+      z-index: 60;
+      width: 300px;
+      background: rgba(20,20,24,0.97);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 60px rgba(100,160,255,0.06);
+      backdrop-filter: blur(16px);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      transform: scale(0.92) translateY(-8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .search-panel.open {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .search-panel-title {
+      color: rgba(255,255,255,0.6);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .search-field {
+      margin-bottom: 12px;
+    }
+    .search-field label {
+      display: block;
+      color: rgba(255,255,255,0.35);
+      font-size: 11px;
+      margin-bottom: 5px;
+      letter-spacing: 0.5px;
+    }
+    .search-field input {
+      width: 100%;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    .search-field input:focus {
+      border-color: rgba(145,213,255,0.5);
+      box-shadow: 0 0 12px rgba(145,213,255,0.1);
+    }
+    .search-field input::placeholder { color: rgba(255,255,255,0.2); }
+    .search-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .search-actions button {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      transition: all 0.15s;
+    }
+    .search-actions .btn-search {
+      background: rgba(145,213,255,0.18);
+      color: #91d5ff;
+      border: 1px solid rgba(145,213,255,0.3);
+    }
+    .search-actions .btn-search:hover { background: rgba(145,213,255,0.28); }
+    .search-actions .btn-clear {
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.45);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .search-actions .btn-clear:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+    .search-result-msg {
+      color: rgba(255,255,255,0.35);
+      font-size: 11px;
+      text-align: center;
+      margin-top: 12px;
+      min-height: 16px;
+      transition: color 0.2s;
+    }
+    .search-result-msg.error { color: #ff6b6b; }
+    .search-result-msg.success { color: #95de64; }
+
+    /* ========== 保存按钮 ========== */
+    .save-btn {
+      position: fixed;
+      top: 22px;
+      right: 70px;
+      z-index: 60;
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      background: rgba(24,24,28,0.85);
+      backdrop-filter: blur(10px);
+      color: rgba(255,255,255,0.55);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .save-btn:hover {
+      background: rgba(40,40,48,0.95);
+      color: rgba(255,255,255,0.85);
+      border-color: rgba(255,214,102,0.3);
+      box-shadow: 0 0 16px rgba(255,214,102,0.1);
+    }
+    .save-btn.active {
+      color: #ffd666;
+      border-color: rgba(255,214,102,0.5);
+      box-shadow: 0 0 20px rgba(255,214,102,0.15);
+    }
+
+    /* ========== 版本面板 ========== */
+    .version-panel {
+      position: fixed;
+      top: 68px;
+      right: 70px;
+      z-index: 60;
+      width: 320px;
+      background: rgba(20,20,24,0.97);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 60px rgba(255,214,102,0.06);
+      backdrop-filter: blur(16px);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      transform: scale(0.92) translateY(-8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: calc(100vh - 100px);
+      display: flex;
+      flex-direction: column;
+    }
+    .version-panel.open {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .version-panel-title {
+      color: rgba(255,255,255,0.6);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .version-save-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .version-save-row input {
+      flex: 1;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    .version-save-row input:focus {
+      border-color: rgba(255,214,102,0.5);
+      box-shadow: 0 0 12px rgba(255,214,102,0.1);
+    }
+    .version-save-row input::placeholder { color: rgba(255,255,255,0.2); }
+    .version-save-row button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      transition: all 0.15s;
+      background: rgba(255,214,102,0.18);
+      color: #ffd666;
+      border: 1px solid rgba(255,214,102,0.3);
+      white-space: nowrap;
+    }
+    .version-save-row button:hover { background: rgba(255,214,102,0.28); }
+
+    .version-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 400px;
+    }
+    .version-list::-webkit-scrollbar { width: 3px; }
+    .version-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    .version-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: rgba(255,255,255,0.02);
+      transition: all 0.15s;
+    }
+    .version-item:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.12);
+    }
+    .version-item-info { flex: 1; overflow: hidden; }
+    .version-item-name {
+      color: rgba(255,255,255,0.85);
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .version-item-time {
+      color: rgba(255,255,255,0.3);
+      font-size: 11px;
+      margin-top: 3px;
+    }
+    .version-item-meta {
+      color: rgba(255,255,255,0.2);
+      font-size: 10px;
+      margin-top: 2px;
+    }
+    .version-item-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .version-item-actions button {
+      padding: 4px 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      transition: all 0.15s;
+    }
+    .btn-restore {
+      background: rgba(145,213,255,0.12);
+      color: rgba(145,213,255,0.8);
+      border: 1px solid rgba(145,213,255,0.2) !important;
+    }
+    .btn-restore:hover { background: rgba(145,213,255,0.22); color: #91d5ff; }
+    .btn-version-del {
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.3);
+      border: 1px solid rgba(255,255,255,0.06) !important;
+    }
+    .btn-version-del:hover { background: rgba(255,80,80,0.12); color: #ff6b6b; }
+
+    .version-empty {
+      color: rgba(255,255,255,0.2);
+      font-size: 12px;
+      text-align: center;
+      padding: 24px 0;
+      letter-spacing: 0.5px;
+    }
+    .version-msg {
+      color: rgba(255,255,255,0.35);
+      font-size: 11px;
+      text-align: center;
+      margin-top: 10px;
+      min-height: 16px;
+      transition: color 0.2s;
+    }
+    .version-msg.success { color: #ffd666; }
+    .version-msg.error { color: #ff6b6b; }
+  </style>
+</head>
+<body>
+
+  <div class="stardust"></div>
+  <div class="title">✦ 脑 图 宇 宙 ✦</div>
+  <div id="container"></div>
+  <div class="status-bar" id="statusBar"></div>
+  <div class="empty-hint" id="emptyHint">双击空白处，创造你的第一颗星</div>
+  <div class="tips">
+    双击空白 · 创建 &nbsp;|&nbsp; 双击节点 · 详情 &nbsp;|&nbsp; 长按拖向节点 · 连线 &nbsp;|&nbsp; 短按拖拽 · 移动 &nbsp;|&nbsp; 右键 · 编辑/删除 &nbsp;|&nbsp; 🔍 搜索高亮
+  </div>
+
+  <!-- 保存按钮 -->
+  <button class="save-btn" id="saveBtn" title="版本管理">💾</button>
+
+  <!-- 版本面板 -->
+  <div class="version-panel" id="versionPanel">
+    <div class="version-panel-title">版本管理</div>
+    <div class="version-save-row">
+      <input type="text" id="versionNameInput" placeholder="输入版本名称（可选）..." autocomplete="off" />
+      <button id="versionSaveBtn">保存</button>
+    </div>
+    <div class="version-list" id="versionList">
+      <div class="version-empty">暂无保存的版本</div>
+    </div>
+    <div class="version-msg" id="versionMsg"></div>
+  </div>
+
+  <!-- 搜索按钮 -->
+  <button class="search-btn" id="searchBtn" title="搜索高亮">🔍</button>
+
+  <!-- 搜索面板 -->
+  <div class="search-panel" id="searchPanel">
+    <div class="search-panel-title">路径搜索</div>
+    <div class="search-field">
+      <label>词条 A</label>
+      <input type="text" id="searchA" placeholder="输入节点名称..." autocomplete="off" />
+    </div>
+    <div class="search-field">
+      <label>词条 B</label>
+      <input type="text" id="searchB" placeholder="输入节点名称..." autocomplete="off" />
+    </div>
+    <div class="search-actions">
+      <button class="btn-clear" id="searchClearBtn">清除</button>
+      <button class="btn-search" id="searchConfirmBtn">确认高亮</button>
+    </div>
+    <div class="search-result-msg" id="searchMsg"></div>
+  </div>
+
+  <svg id="linkLineSvg">
+    <line id="linkLine" x1="0" y1="0" x2="0" y2="0"
+      stroke="rgba(255,214,102,0.5)" stroke-width="2" stroke-dasharray="8,5"
+      style="display:none;" />
+  </svg>
+
+  <!-- 右键菜单 -->
+  <div class="context-menu" id="contextMenu">
+    <div class="menu-item" id="menuEdit">✎ 重命名</div>
+    <div class="menu-item" id="menuResize">◎ 调整大小</div>
+    <div class="divider"></div>
+    <div class="menu-item danger" id="menuDelete">✕ 删除</div>
+  </div>
+  <div class="context-menu" id="edgeContextMenu">
+    <div class="menu-item danger" id="menuDeleteEdge">✕ 删除连线</div>
+  </div>
+
+  <!-- 自定义弹窗 -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box" id="modalBox">
+      <div class="modal-title" id="modalTitle"></div>
+      <div id="modalBody"></div>
+      <div class="modal-buttons" id="modalButtons"></div>
+    </div>
+  </div>
+
+  <!-- 右侧详情侧边栏 -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-node-name">
+        <span class="star-dot"></span>
+        <span id="sidebarName">—</span>
+      </div>
+      <button class="sidebar-close" id="sidebarClose">✕</button>
+    </div>
+    <div class="sidebar-body">
+      <div class="sidebar-section">
+        <div class="sidebar-label">日期</div>
+        <input type="date" class="sidebar-input" id="sidebarDate" />
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">备注</div>
+        <textarea class="sidebar-textarea" id="sidebarNotes" placeholder="在这里记录你的想法..."></textarea>
+      </div>
+      <div class="sidebar-save-hint">内容会自动保存到节点</div>
+    </div>
+  </div>
+
+  <script src="https://gw.alipayobjects.com/os/lib/antv/g6/4.8.24/dist/g6.min.js"></script>
+  <script>
+    // =============================================
+    //  自定义弹窗系统
+    // =============================================
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modalButtons = document.getElementById('modalButtons');
+    let modalResolve = null;
+
+    function showModal({ title, type, placeholder, defaultValue, message }) {
+      return new Promise((resolve) => {
+        modalResolve = resolve;
+        modalTitle.textContent = title || '';
+        modalBody.innerHTML = '';
+        modalButtons.innerHTML = '';
+
+        let inputEl = null;
+        if (type === 'input') {
+          inputEl = document.createElement('input');
+          inputEl.className = 'modal-input';
+          inputEl.type = 'text';
+          inputEl.placeholder = placeholder || '';
+          inputEl.value = defaultValue || '';
+          modalBody.appendChild(inputEl);
+        } else if (type === 'confirm') {
+          const msg = document.createElement('div');
+          msg.className = 'modal-msg';
+          msg.textContent = message || '';
+          modalBody.appendChild(msg);
+        }
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'modal-btn cancel';
+        cancelBtn.textContent = '取消';
+        cancelBtn.onclick = () => { closeModal(); resolve(null); };
+
+        const okBtn = document.createElement('button');
+        if (type === 'confirm') {
+          okBtn.className = 'modal-btn danger';
+          okBtn.textContent = '确认删除';
+        } else {
+          okBtn.className = 'modal-btn primary';
+          okBtn.textContent = '确定';
+        }
+        okBtn.onclick = () => {
+          const val = inputEl ? inputEl.value : true;
+          closeModal();
+          resolve(val);
+        };
+
+        modalButtons.appendChild(cancelBtn);
+        modalButtons.appendChild(okBtn);
+        modalOverlay.classList.add('active');
+
+        if (inputEl) {
+          setTimeout(() => { inputEl.focus(); inputEl.select(); }, 60);
+          inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') okBtn.click();
+            if (e.key === 'Escape') cancelBtn.click();
+          });
+        }
+        const onKey = (e) => {
+          if (e.key === 'Escape') { cancelBtn.click(); document.removeEventListener('keydown', onKey); }
+        };
+        document.addEventListener('keydown', onKey);
+      });
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('active');
+      modalResolve = null;
+    }
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        closeModal();
+        if (modalResolve) modalResolve(null);
+      }
+    });
+
+    // =============================================
+    //  侧边栏
+    // =============================================
+    const sidebar = document.getElementById('sidebar');
+    const sidebarName = document.getElementById('sidebarName');
+    const sidebarDate = document.getElementById('sidebarDate');
+    const sidebarNotes = document.getElementById('sidebarNotes');
+    const sidebarClose = document.getElementById('sidebarClose');
+    let sidebarNodeId = null;
+
+    function openSidebar(nodeItem) {
+      const model = nodeItem.getModel();
+      sidebarNodeId = model.id;
+      sidebarName.textContent = model.label || '未命名';
+      sidebarDate.value = model._date || '';
+      sidebarNotes.value = model._notes || '';
+      sidebar.classList.add('open');
+    }
+
+    function closeSidebar() {
+      saveSidebarData();
+      sidebar.classList.remove('open');
+      sidebarNodeId = null;
+    }
+
+    function saveSidebarData() {
+      if (!sidebarNodeId) return;
+      const item = graph.findById(sidebarNodeId);
+      if (!item) return;
+      const model = item.getModel();
+      model._date = sidebarDate.value;
+      model._notes = sidebarNotes.value;
+    }
+
+    sidebarClose.addEventListener('click', closeSidebar);
+
+    // 实时自动保存：输入时存到 model
+    sidebarDate.addEventListener('change', saveSidebarData);
+    sidebarNotes.addEventListener('input', saveSidebarData);
+
+    // ESC 关闭侧边栏
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('open') && !modalOverlay.classList.contains('active')) {
+        closeSidebar();
+      }
+    });
+
+    // =============================================
+    //  数据 & 颜色
+    // =============================================
+    const data = { nodes: [], edges: [] };
+    const normalColor    = { fill: '#e6f7ff', glow: '#91d5ff', stroke: '#69c0ff' };
+    const linkingColor   = { fill: '#fff0b3', glow: '#ffc53d', stroke: '#ffa940' };
+    const highlightColor = { fill: '#b7eb8f', glow: '#52c41a', stroke: '#73d13d' };
+
+    // =============================================
+    //  注册自定义节点
+    // =============================================
+    G6.registerNode('glow-circle', {
+      draw(cfg, group) {
+        const size = cfg.nodeSize || 24;
+        const isLinking = cfg._linking;
+        const isHighlight = cfg._highlight;
+        const colors = isLinking ? linkingColor : isHighlight ? highlightColor : normalColor;
+
+        if (isLinking) {
+          group.addShape('circle', {
+            attrs: {
+              x: 0, y: 0, r: size * 2.2,
+              fill: 'transparent', stroke: linkingColor.glow,
+              lineWidth: 1.5, opacity: 0.45, lineDash: [6, 4],
+            },
+            name: 'link-ring',
+          });
+        }
+
+        if (isHighlight) {
+          group.addShape('circle', {
+            attrs: {
+              x: 0, y: 0, r: size * 2.4,
+              fill: 'transparent', stroke: highlightColor.glow,
+              lineWidth: 2, opacity: 0.4, lineDash: [6, 4],
+            },
+            name: 'highlight-ring',
+          });
+        }
+
+        group.addShape('circle', {
+          attrs: {
+            x: 0, y: 0, r: size * 1.6,
+            fill: `l(0) 0:${colors.glow}33 1:${colors.glow}00`,
+            opacity: isLinking ? 0.5 : isHighlight ? 0.55 : 0.3,
+          },
+          name: 'glow-outer',
+        });
+
+        group.addShape('circle', {
+          attrs: {
+            x: 0, y: 0, r: size * 1.1,
+            fill: `l(0) 0:${colors.glow}55 1:${colors.glow}00`,
+            opacity: isLinking ? 0.6 : isHighlight ? 0.65 : 0.4,
+          },
+          name: 'glow-mid',
+        });
+
+        const keyShape = group.addShape('circle', {
+          attrs: {
+            x: 0, y: 0, r: size / 2,
+            fill: colors.fill, stroke: colors.stroke,
+            lineWidth: isLinking ? 2.5 : isHighlight ? 2.5 : 1.5,
+            shadowColor: colors.glow,
+            shadowBlur: isLinking ? size * 2.5 : isHighlight ? size * 2.5 : size * 1.5,
+          },
+          name: 'key-shape',
+        });
+
+        group.addShape('text', {
+          attrs: {
+            x: 0, y: size / 2 + 14,
+            text: cfg.label || '',
+            textAlign: 'center', textBaseline: 'top',
+            fill: isLinking ? 'rgba(255,220,120,0.95)' : isHighlight ? 'rgba(180,255,120,0.95)' : 'rgba(255,255,255,0.78)',
+            fontSize: Math.max(10, Math.min(14, size * 0.55)),
+            fontFamily: 'Helvetica Neue, Arial, sans-serif',
+            textShadowColor: colors.glow, textShadowBlur: 8,
+          },
+          name: 'label',
+        });
+
+        return keyShape;
+      },
+      getAnchorPoints() {
+        return [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]];
+      },
+    }, 'single-node');
+
+    // =============================================
+    //  状态管理
+    // =============================================
+    let nodeIdCounter = 0;
+    let contextTarget = null;
+
+    const statusBar = document.getElementById('statusBar');
+    const contextMenu = document.getElementById('contextMenu');
+    const edgeContextMenu = document.getElementById('edgeContextMenu');
+    const emptyHint = document.getElementById('emptyHint');
+    const linkLine = document.getElementById('linkLine');
+
+    function showStatus(text) { statusBar.textContent = text; statusBar.classList.add('visible'); }
+    function hideStatus() { statusBar.textContent = ''; statusBar.classList.remove('visible'); }
+    function hideAllMenus() { contextMenu.style.display = 'none'; edgeContextMenu.style.display = 'none'; }
+    function updateEmptyHint() { emptyHint.classList.toggle('hidden', graph.getNodes().length > 0); }
+
+    // =============================================
+    //  长按连线状态
+    // =============================================
+    let longPressTimer = null;
+    let isLinkingMode = false;
+    let linkSourceNode = null;
+    let mouseDownPos = { x: 0, y: 0 };
+    let isDragging = false;
+    let mouseHasMoved = false;
+    let mouseDownNode = null;
+    const LONG_PRESS_MS = 600;
+    const MOVE_THRESHOLD = 5;
+
+    function setNodeLinking(nodeId, linking) {
+      const item = graph.findById(nodeId);
+      if (!item) return;
+      const model = item.getModel();
+      model._linking = linking;
+      graph.updateItem(item, model);
+    }
+    function cancelLinking() {
+      if (linkSourceNode) setNodeLinking(linkSourceNode.getModel().id, false);
+      isLinkingMode = false;
+      linkSourceNode = null;
+      linkLine.style.display = 'none';
+      hideStatus();
+    }
+    function clearLongPressTimer() {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    }
+
+    // =============================================
+    //  创建图实例
+    // =============================================
+    const container = document.getElementById('container');
+
+    const graph = new G6.Graph({
+      container: 'container',
+      width: container.offsetWidth || window.innerWidth,
+      height: container.offsetHeight || window.innerHeight,
+      fitView: false,
+      animate: true,
+      defaultNode: { type: 'glow-circle', nodeSize: 24 },
+      defaultEdge: {
+        type: 'line',
+        style: { stroke: 'rgba(255,255,255,0.15)', lineWidth: 1, lineDash: [4, 4], endArrow: false },
+      },
+      nodeStateStyles: { hover: { shadowBlur: 40 } },
+      edgeStateStyles: { hover: { stroke: 'rgba(255,255,255,0.4)', lineWidth: 2 } },
+      modes: { default: ['drag-canvas', 'zoom-canvas'] },
+      layout: {
+        type: 'force',
+        preventOverlap: true,
+        nodeSpacing: 80,
+        linkDistance: 160,
+        nodeStrength: -1200,
+        edgeStrength: 0.15,
+        alphaDecay: 0.01,
+        alphaMin: 0.0005,
+        alpha: 0.6,
+        forceSimulation: null,
+      },
+    });
+
+    // =============================================
+    //  节点悬停
+    // =============================================
+    graph.on('node:mouseenter', (evt) => {
+      if (isDragging || isLinkingMode) return;
+      const node = evt.item;
+      graph.setItemState(node, 'hover', true);
+      node.getEdges().forEach(edge => graph.setItemState(edge, 'hover', true));
+      container.style.cursor = 'grab';
+    });
+    graph.on('node:mouseleave', (evt) => {
+      const node = evt.item;
+      graph.setItemState(node, 'hover', false);
+      node.getEdges().forEach(edge => graph.setItemState(edge, 'hover', false));
+      if (!isDragging && !isLinkingMode) container.style.cursor = 'default';
+    });
+
+    // =============================================
+    //  节点 mousedown → 长按检测
+    // =============================================
+    graph.on('node:mousedown', (evt) => {
+      if (evt.originalEvent.button !== 0) return;
+      hideAllMenus();
+      const node = evt.item;
+      mouseDownNode = node;
+      mouseDownPos = { x: evt.clientX, y: evt.clientY };
+      mouseHasMoved = false;
+      isDragging = false;
+      isLinkingMode = false;
+
+      longPressTimer = setTimeout(() => {
+        if (!mouseHasMoved) {
+          isLinkingMode = true;
+          linkSourceNode = node;
+          setNodeLinking(node.getModel().id, true);
+          showStatus('连线模式 — 拖向另一个节点松开以建立连线');
+          container.style.cursor = 'crosshair';
+          linkLine.setAttribute('x1', evt.clientX);
+          linkLine.setAttribute('y1', evt.clientY);
+          linkLine.setAttribute('x2', evt.clientX);
+          linkLine.setAttribute('y2', evt.clientY);
+          linkLine.style.display = 'block';
+        }
+      }, LONG_PRESS_MS);
+    });
+
+    // =============================================
+    //  全局 mousemove
+    // =============================================
+    document.addEventListener('mousemove', (evt) => {
+      if (!longPressTimer && !isDragging && !isLinkingMode) return;
+      const dx = evt.clientX - mouseDownPos.x;
+      const dy = evt.clientY - mouseDownPos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (longPressTimer && dist > MOVE_THRESHOLD) {
+        mouseHasMoved = true;
+        clearLongPressTimer();
+        isDragging = true;
+        container.style.cursor = 'grabbing';
+      }
+      if (isDragging && !isLinkingMode && mouseDownNode) {
+        const point = graph.getPointByClient(evt.clientX, evt.clientY);
+        graph.updateItem(mouseDownNode, { x: point.x, y: point.y });
+      }
+      if (isLinkingMode) {
+        linkLine.setAttribute('x2', evt.clientX);
+        linkLine.setAttribute('y2', evt.clientY);
+      }
+    });
+
+    // =============================================
+    //  全局 mouseup
+    // =============================================
+    document.addEventListener('mouseup', (evt) => {
+      clearLongPressTimer();
+      if (isLinkingMode && linkSourceNode) {
+        const point = graph.getPointByClient(evt.clientX, evt.clientY);
+        const targetItem = graph.find('node', (n) => {
+          const model = n.getModel();
+          const d = Math.sqrt((model.x - point.x) ** 2 + (model.y - point.y) ** 2);
+          return d < (model.nodeSize || 24) / 2 + 10 && n !== linkSourceNode;
+        });
+        if (targetItem) {
+          const srcId = linkSourceNode.getModel().id;
+          const tgtId = targetItem.getModel().id;
+          const exists = graph.getEdges().some(e => {
+            const m = e.getModel();
+            return (m.source === srcId && m.target === tgtId) || (m.source === tgtId && m.target === srcId);
+          });
+          if (!exists) graph.addItem('edge', { source: srcId, target: tgtId });
+        }
+        cancelLinking();
+      }
+      isDragging = false;
+      mouseDownNode = null;
+      mouseHasMoved = false;
+      container.style.cursor = 'default';
+    });
+
+    // =============================================
+    //  双击节点：打开侧边栏
+    // =============================================
+    graph.on('node:dblclick', (evt) => {
+      hideAllMenus();
+      openSidebar(evt.item);
+    });
+
+    // =============================================
+    //  单击画布空白：关闭菜单 + 关闭侧边栏
+    // =============================================
+    graph.on('canvas:click', () => {
+      hideAllMenus();
+      if (sidebar.classList.contains('open')) closeSidebar();
+    });
+
+    // =============================================
+    //  双击画布空白：创建新节点
+    // =============================================
+    graph.on('canvas:dblclick', async (evt) => {
+      hideAllMenus();
+      const label = await showModal({
+        title: '创建新星星',
+        type: 'input',
+        placeholder: '输入星星名称...',
+      });
+      if (!label || !label.trim()) return;
+
+      const point = graph.getPointByClient(evt.clientX, evt.clientY);
+      nodeIdCounter++;
+      graph.addItem('node', {
+        id: 'n_' + nodeIdCounter + '_' + Date.now(),
+        label: label.trim(),
+        x: point.x,
+        y: point.y,
+        nodeSize: 24,
+        type: 'glow-circle',
+        _date: '',
+        _notes: '',
+      });
+      updateEmptyHint();
+    });
+
+    // =============================================
+    //  右键菜单
+    // =============================================
+    graph.on('node:contextmenu', (evt) => {
+      evt.preventDefault && evt.preventDefault();
+      hideAllMenus();
+      contextTarget = evt.item;
+      const { clientX, clientY } = evt;
+      const menuW = 150, menuH = 120;
+      contextMenu.style.left = (clientX + menuW > window.innerWidth ? clientX - menuW : clientX) + 'px';
+      contextMenu.style.top = (clientY + menuH > window.innerHeight ? clientY - menuH : clientY) + 'px';
+      contextMenu.style.display = 'block';
+    });
+    graph.on('edge:contextmenu', (evt) => {
+      evt.preventDefault && evt.preventDefault();
+      hideAllMenus();
+      contextTarget = evt.item;
+      edgeContextMenu.style.left = evt.clientX + 'px';
+      edgeContextMenu.style.top = evt.clientY + 'px';
+      edgeContextMenu.style.display = 'block';
+    });
+
+    // =============================================
+    //  菜单操作
+    // =============================================
+    document.getElementById('menuEdit').addEventListener('click', async () => {
+      hideAllMenus();
+      if (!contextTarget) return;
+      const model = contextTarget.getModel();
+      const target = contextTarget;
+      const newLabel = await showModal({
+        title: '重命名', type: 'input',
+        placeholder: '输入新名称...', defaultValue: model.label,
+      });
+      if (newLabel !== null && newLabel.trim()) {
+        graph.updateItem(target, { label: newLabel.trim() });
+        // 如果侧边栏正在显示此节点，同步名称
+        if (sidebarNodeId === model.id) sidebarName.textContent = newLabel.trim();
+      }
+      contextTarget = null;
+    });
+
+    document.getElementById('menuResize').addEventListener('click', async () => {
+      hideAllMenus();
+      if (!contextTarget) return;
+      const model = contextTarget.getModel();
+      const target = contextTarget;
+      const newSize = await showModal({
+        title: '调整大小', type: 'input',
+        placeholder: '输入大小（8~60）', defaultValue: String(model.nodeSize || 24),
+      });
+      if (newSize !== null) {
+        let size = parseInt(newSize, 10);
+        if (isNaN(size)) return;
+        size = Math.max(8, Math.min(60, size));
+        graph.updateItem(target, { nodeSize: size });
+      }
+      contextTarget = null;
+    });
+
+    document.getElementById('menuDelete').addEventListener('click', async () => {
+      hideAllMenus();
+      if (!contextTarget) return;
+      const model = contextTarget.getModel();
+      const target = contextTarget;
+      const ok = await showModal({
+        title: '删除确认', type: 'confirm',
+        message: '确定要删除「' + model.label + '」吗？',
+      });
+      if (ok) {
+        if (sidebarNodeId === model.id) closeSidebar();
+        // 如果被删节点是高亮状态，清除其高亮记录
+        highlightedNodeIds = highlightedNodeIds.filter(id => id !== model.id);
+        graph.removeItem(target);
+        updateEmptyHint();
+      }
+      contextTarget = null;
+    });
+
+    document.getElementById('menuDeleteEdge').addEventListener('click', () => {
+      hideAllMenus();
+      if (!contextTarget) return;
+      const edgeId = contextTarget.getModel().id;
+      highlightedEdgeIds = highlightedEdgeIds.filter(id => id !== edgeId);
+      graph.removeItem(contextTarget);
+      contextTarget = null;
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!contextMenu.contains(e.target) && !edgeContextMenu.contains(e.target)) hideAllMenus();
+    });
+    container.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // =============================================
+    //  微漂动画
+    // =============================================
+    let driftAngle = 0;
+    function driftTick() {
+      driftAngle += 0.002;
+      const nodes = graph.getNodes();
+      if (nodes.length > 0 && !isDragging && !isLinkingMode) {
+        nodes.forEach((node, i) => {
+          const model = node.getModel();
+          const phase = i * 1.618;
+          model.x += Math.sin(driftAngle + phase) * 0.08;
+          model.y += Math.cos(driftAngle * 0.7 + phase) * 0.06;
+        });
+        graph.refreshPositions();
+      }
+      requestAnimationFrame(driftTick);
+    }
+    setTimeout(() => requestAnimationFrame(driftTick), 2000);
+
+    // =============================================
+    //  渲染
+    // =============================================
+    graph.data(data);
+    graph.render();
+    updateEmptyHint();
+
+    // =============================================
+    //  搜索高亮功能
+    // =============================================
+    const searchBtn = document.getElementById('searchBtn');
+    const searchPanel = document.getElementById('searchPanel');
+    const searchA = document.getElementById('searchA');
+    const searchB = document.getElementById('searchB');
+    const searchConfirmBtn = document.getElementById('searchConfirmBtn');
+    const searchClearBtn = document.getElementById('searchClearBtn');
+    const searchMsg = document.getElementById('searchMsg');
+    let highlightedNodeIds = [];
+    let highlightedEdgeIds = [];
+
+    searchBtn.addEventListener('click', () => {
+      const isOpen = searchPanel.classList.contains('open');
+      if (isOpen) {
+        searchPanel.classList.remove('open');
+        searchBtn.classList.remove('active');
+      } else {
+        searchPanel.classList.add('open');
+        searchBtn.classList.add('active');
+        setTimeout(() => searchA.focus(), 100);
+      }
+    });
+
+    // ESC 关闭搜索面板
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && searchPanel.classList.contains('open') && !modalOverlay.classList.contains('active')) {
+        searchPanel.classList.remove('open');
+        searchBtn.classList.remove('active');
+      }
+    });
+
+    function clearSearchHighlight() {
+      highlightedNodeIds.forEach(id => {
+        const item = graph.findById(id);
+        if (item) {
+          const model = item.getModel();
+          model._highlight = false;
+          graph.updateItem(item, model);
+        }
+      });
+      highlightedEdgeIds.forEach(id => {
+        const item = graph.findById(id);
+        if (item) {
+          graph.updateItem(item, {
+            style: { stroke: 'rgba(255,255,255,0.15)', lineWidth: 1, lineDash: [4, 4], shadowBlur: 0, shadowColor: 'transparent' },
+          });
+        }
+      });
+      highlightedNodeIds = [];
+      highlightedEdgeIds = [];
+    }
+
+    searchConfirmBtn.addEventListener('click', () => {
+      const termA = searchA.value.trim();
+      const termB = searchB.value.trim();
+      searchMsg.textContent = '';
+      searchMsg.className = 'search-result-msg';
+
+      if (!termA || !termB) {
+        searchMsg.textContent = '请输入两个词条';
+        searchMsg.classList.add('error');
+        return;
+      }
+
+      // 清除之前的高亮
+      clearSearchHighlight();
+
+      // 查找节点（模糊匹配：包含即可）
+      const nodeA = graph.find('node', n => n.getModel().label && n.getModel().label.includes(termA));
+      const nodeB = graph.find('node', n => n.getModel().label && n.getModel().label.includes(termB));
+
+      if (!nodeA && !nodeB) {
+        searchMsg.textContent = '未找到「' + termA + '」和「' + termB + '」';
+        searchMsg.classList.add('error');
+        return;
+      }
+      if (!nodeA) {
+        searchMsg.textContent = '未找到「' + termA + '」';
+        searchMsg.classList.add('error');
+        return;
+      }
+      if (!nodeB) {
+        searchMsg.textContent = '未找到「' + termB + '」';
+        searchMsg.classList.add('error');
+        return;
+      }
+      if (nodeA === nodeB) {
+        searchMsg.textContent = '两个词条匹配了同一个节点';
+        searchMsg.classList.add('error');
+        return;
+      }
+
+      // 高亮节点
+      const idA = nodeA.getModel().id;
+      const idB = nodeB.getModel().id;
+      [idA, idB].forEach(id => {
+        const item = graph.findById(id);
+        if (item) {
+          const model = item.getModel();
+          model._highlight = true;
+          graph.updateItem(item, model);
+          highlightedNodeIds.push(id);
+        }
+      });
+
+      // 查找并高亮连线
+      const matchedEdges = graph.getEdges().filter(e => {
+        const m = e.getModel();
+        return (m.source === idA && m.target === idB) || (m.source === idB && m.target === idA);
+      });
+
+      if (matchedEdges.length > 0) {
+        matchedEdges.forEach(edge => {
+          graph.updateItem(edge, {
+            style: {
+              stroke: '#73d13d',
+              lineWidth: 2.5,
+              lineDash: [6, 3],
+              shadowBlur: 12,
+              shadowColor: 'rgba(82,196,26,0.5)',
+            },
+          });
+          highlightedEdgeIds.push(edge.getModel().id);
+        });
+        searchMsg.textContent = '已高亮「' + nodeA.getModel().label + '」↔「' + nodeB.getModel().label + '」及连线';
+        searchMsg.classList.add('success');
+      } else {
+        searchMsg.textContent = '已高亮两个节点（它们之间暂无直接连线）';
+        searchMsg.classList.add('success');
+      }
+
+      // 自动移动视角，让两个节点居中可见
+      const mA = nodeA.getModel();
+      const mB = nodeB.getModel();
+      const cx = (mA.x + mB.x) / 2;
+      const cy = (mA.y + mB.y) / 2;
+      graph.focusItem(nodeA, true);
+      setTimeout(() => {
+        const curZoom = graph.getZoom();
+        graph.moveTo(
+          graph.getWidth() / 2 - cx * curZoom,
+          graph.getHeight() / 2 - cy * curZoom,
+          true
+        );
+      }, 100);
+    });
+
+    searchClearBtn.addEventListener('click', () => {
+      clearSearchHighlight();
+      searchA.value = '';
+      searchB.value = '';
+      searchMsg.textContent = '已清除高亮';
+      searchMsg.className = 'search-result-msg';
+      setTimeout(() => { searchMsg.textContent = ''; }, 1500);
+    });
+
+    // Enter 键触发搜索
+    searchA.addEventListener('keydown', (e) => { if (e.key === 'Enter') { searchB.focus(); } });
+    searchB.addEventListener('keydown', (e) => { if (e.key === 'Enter') { searchConfirmBtn.click(); } });
+
+    // =============================================
+    //  版本管理（保存/恢复/删除）
+    // =============================================
+    const STORAGE_KEY = 'brain-universe-versions';
+    const saveBtn = document.getElementById('saveBtn');
+    const versionPanel = document.getElementById('versionPanel');
+    const versionNameInput = document.getElementById('versionNameInput');
+    const versionSaveBtn = document.getElementById('versionSaveBtn');
+    const versionList = document.getElementById('versionList');
+    const versionMsg = document.getElementById('versionMsg');
+
+    function getVersions() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function setVersions(versions) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(versions));
+    }
+
+    function captureSnapshot() {
+      const nodes = graph.getNodes().map(n => {
+        const m = n.getModel();
+        return {
+          id: m.id, label: m.label, x: m.x, y: m.y,
+          nodeSize: m.nodeSize, _date: m._date, _notes: m._notes,
+        };
+      });
+      const edges = graph.getEdges().map(e => {
+        const m = e.getModel();
+        return { source: m.source, target: m.target };
+      });
+      return { nodes, edges };
+    }
+
+    function restoreSnapshot(snapshot) {
+      if (sidebar.classList.contains('open')) closeSidebar();
+      clearSearchHighlight();
+
+      const restoreData = {
+        nodes: snapshot.nodes.map(nd => ({
+          id: nd.id, label: nd.label, x: nd.x, y: nd.y,
+          nodeSize: nd.nodeSize || 24,
+          _date: nd._date || '', _notes: nd._notes || '',
+          type: 'glow-circle',
+        })),
+        edges: snapshot.edges.map(eg => ({
+          source: eg.source, target: eg.target,
+        })),
+      };
+
+      const maxNum = snapshot.nodes.reduce((mx, nd) => {
+        const match = nd.id.match(/^n_(\d+)_/);
+        return match ? Math.max(mx, parseInt(match[1], 10)) : mx;
+      }, nodeIdCounter);
+      nodeIdCounter = maxNum;
+
+      graph.clear();
+      graph.data(restoreData);
+      graph.render();
+      updateEmptyHint();
+    }
+
+    function formatTime(ts) {
+      const d = new Date(ts);
+      const pad = n => String(n).padStart(2, '0');
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+        + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    }
+
+    function showVersionMsg(text, type) {
+      versionMsg.textContent = text;
+      versionMsg.className = 'version-msg' + (type ? ' ' + type : '');
+      setTimeout(() => { versionMsg.textContent = ''; versionMsg.className = 'version-msg'; }, 2000);
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function renderVersionList() {
+      const versions = getVersions();
+      versionList.innerHTML = '';
+      if (versions.length === 0) {
+        versionList.innerHTML = '<div class="version-empty">暂无保存的版本</div>';
+        return;
+      }
+      versions.forEach((ver, idx) => {
+        const div = document.createElement('div');
+        div.className = 'version-item';
+        div.innerHTML = `
+          <div class="version-item-info">
+            <div class="version-item-name">${escapeHtml(ver.name)}</div>
+            <div class="version-item-time">${formatTime(ver.time)}</div>
+            <div class="version-item-meta">${ver.snapshot.nodes.length} 个节点 · ${ver.snapshot.edges.length} 条连线</div>
+          </div>
+          <div class="version-item-actions">
+            <button class="btn-restore" data-idx="${idx}">恢复</button>
+            <button class="btn-version-del" data-idx="${idx}">删除</button>
+          </div>
+        `;
+        versionList.appendChild(div);
+      });
+
+      versionList.querySelectorAll('.btn-restore').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const i = parseInt(btn.dataset.idx, 10);
+          const vers = getVersions();
+          if (!vers[i]) return;
+          const ok = await showModal({
+            title: '恢复版本', type: 'confirm',
+            message: '确定恢复到「' + vers[i].name + '」？当前未保存的内容将丢失。',
+          });
+          if (ok) {
+            restoreSnapshot(vers[i].snapshot);
+            showVersionMsg('已恢复到「' + vers[i].name + '」', 'success');
+          }
+        });
+      });
+
+      versionList.querySelectorAll('.btn-version-del').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const i = parseInt(btn.dataset.idx, 10);
+          const vers = getVersions();
+          if (!vers[i]) return;
+          const ok = await showModal({
+            title: '删除版本', type: 'confirm',
+            message: '确定删除版本「' + vers[i].name + '」？',
+          });
+          if (ok) {
+            vers.splice(i, 1);
+            setVersions(vers);
+            renderVersionList();
+            showVersionMsg('已删除', 'success');
+          }
+        });
+      });
+    }
+
+    saveBtn.addEventListener('click', () => {
+      const isOpen = versionPanel.classList.contains('open');
+      if (isOpen) {
+        versionPanel.classList.remove('open');
+        saveBtn.classList.remove('active');
+      } else {
+        versionPanel.classList.add('open');
+        saveBtn.classList.add('active');
+        renderVersionList();
+        setTimeout(() => versionNameInput.focus(), 100);
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && versionPanel.classList.contains('open') && !modalOverlay.classList.contains('active')) {
+        versionPanel.classList.remove('open');
+        saveBtn.classList.remove('active');
+      }
+    });
+
+    versionSaveBtn.addEventListener('click', () => {
+      const snapshot = captureSnapshot();
+      const name = versionNameInput.value.trim() || ('版本 ' + formatTime(Date.now()));
+      const versions = getVersions();
+      versions.unshift({ name, time: Date.now(), snapshot });
+      if (versions.length > 50) versions.length = 50;
+      setVersions(versions);
+      versionNameInput.value = '';
+      renderVersionList();
+      showVersionMsg('已保存「' + name + '」', 'success');
+    });
+
+    versionNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') versionSaveBtn.click();
+    });
+
+    // 页面加载时自动恢复最近一次保存
+    (function autoRestore() {
+      const versions = getVersions();
+      if (versions.length > 0) {
+        restoreSnapshot(versions[0].snapshot);
+      }
+    })();
+
+    // =============================================
+    //  窗口自适应
+    // =============================================
+    function handleResize() {
+      const w = container.offsetWidth || window.innerWidth;
+      const h = container.offsetHeight || window.innerHeight;
+      if (w > 0 && h > 0) graph.changeSize(w, h);
+    }
+    window.addEventListener('resize', handleResize);
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(() => handleResize()).observe(container);
+    }
+    handleResize();
+  </script>
+</body>
+</html>
