@@ -1377,6 +1377,41 @@
       highlightedEdgeIds = [];
     }
 
+    // BFS 查找两个节点之间的最短路径
+    function findShortestPath(startId, endId) {
+      // 构建邻接表
+      const adj = {};
+      graph.getNodes().forEach(n => { adj[n.getModel().id] = []; });
+      graph.getEdges().forEach(e => {
+        const m = e.getModel();
+        if (adj[m.source]) adj[m.source].push({ neighbor: m.target, edge: e });
+        if (adj[m.target]) adj[m.target].push({ neighbor: m.source, edge: e });
+      });
+
+      // BFS
+      const visited = new Set([startId]);
+      const queue = [{ nodeId: startId, path: [startId], edges: [] }];
+
+      while (queue.length > 0) {
+        const { nodeId, path, edges } = queue.shift();
+        if (nodeId === endId) {
+          return { path, edges };
+        }
+        const neighbors = adj[nodeId] || [];
+        for (const { neighbor, edge } of neighbors) {
+          if (!visited.has(neighbor)) {
+            visited.add(neighbor);
+            queue.push({
+              nodeId: neighbor,
+              path: [...path, neighbor],
+              edges: [...edges, edge],
+            });
+          }
+        }
+      }
+      return null; // 不可达
+    }
+
     searchConfirmBtn.addEventListener('click', () => {
       const termA = searchA.value.trim();
       const termB = searchB.value.trim();
@@ -1417,27 +1452,26 @@
         return;
       }
 
-      // 高亮节点
       const idA = nodeA.getModel().id;
       const idB = nodeB.getModel().id;
-      [idA, idB].forEach(id => {
-        const item = graph.findById(id);
-        if (item) {
-          const model = item.getModel();
-          model._highlight = true;
-          graph.updateItem(item, model);
-          highlightedNodeIds.push(id);
-        }
-      });
 
-      // 查找并高亮连线
-      const matchedEdges = graph.getEdges().filter(e => {
-        const m = e.getModel();
-        return (m.source === idA && m.target === idB) || (m.source === idB && m.target === idA);
-      });
+      // 用 BFS 查找最短路径（支持间接连线）
+      const result = findShortestPath(idA, idB);
 
-      if (matchedEdges.length > 0) {
-        matchedEdges.forEach(edge => {
+      if (result && result.path.length > 0) {
+        // 高亮路径上的所有节点
+        result.path.forEach(nodeId => {
+          const item = graph.findById(nodeId);
+          if (item) {
+            const model = item.getModel();
+            model._highlight = true;
+            graph.updateItem(item, model);
+            highlightedNodeIds.push(nodeId);
+          }
+        });
+
+        // 高亮路径上的所有边
+        result.edges.forEach(edge => {
           graph.updateItem(edge, {
             style: {
               stroke: '#73d13d',
@@ -1449,27 +1483,49 @@
           });
           highlightedEdgeIds.push(edge.getModel().id);
         });
-        searchMsg.textContent = '已高亮「' + nodeA.getModel().label + '」↔「' + nodeB.getModel().label + '」及连线';
+
+        const hops = result.path.length - 1;
+        const pathLabels = result.path.map(id => {
+          const item = graph.findById(id);
+          return item ? item.getModel().label : id;
+        }).join(' → ');
+
+        if (hops === 1) {
+          searchMsg.textContent = '直接连线：' + pathLabels;
+        } else {
+          searchMsg.textContent = hops + ' 步路径：' + pathLabels;
+        }
         searchMsg.classList.add('success');
       } else {
-        searchMsg.textContent = '已高亮两个节点（它们之间暂无直接连线）';
-        searchMsg.classList.add('success');
+        // 无路径可达，仅高亮两个端点
+        [idA, idB].forEach(id => {
+          const item = graph.findById(id);
+          if (item) {
+            const model = item.getModel();
+            model._highlight = true;
+            graph.updateItem(item, model);
+            highlightedNodeIds.push(id);
+          }
+        });
+        searchMsg.textContent = '两节点之间无任何连通路径';
+        searchMsg.classList.add('error');
       }
 
-      // 自动移动视角，让两个节点居中可见
-      const mA = nodeA.getModel();
-      const mB = nodeB.getModel();
-      const cx = (mA.x + mB.x) / 2;
-      const cy = (mA.y + mB.y) / 2;
-      graph.focusItem(nodeA, true);
-      setTimeout(() => {
-        const curZoom = graph.getZoom();
-        graph.moveTo(
-          graph.getWidth() / 2 - cx * curZoom,
-          graph.getHeight() / 2 - cy * curZoom,
-          true
-        );
-      }, 100);
+      // 自动移动视角，让路径居中可见
+      const pathNodes = result ? result.path : [idA, idB];
+      let sumX = 0, sumY = 0;
+      pathNodes.forEach(id => {
+        const item = graph.findById(id);
+        if (item) { sumX += item.getModel().x; sumY += item.getModel().y; }
+      });
+      const cx = sumX / pathNodes.length;
+      const cy = sumY / pathNodes.length;
+      const curZoom = graph.getZoom();
+      graph.moveTo(
+        graph.getWidth() / 2 - cx * curZoom,
+        graph.getHeight() / 2 - cy * curZoom,
+        true
+      );
     });
 
     searchClearBtn.addEventListener('click', () => {
